@@ -19,9 +19,19 @@ Todas as requisições exigem os headers:
 | `Content-Type` | `application/json` |
 | `x-api-key` | `turma2026` |
 
+## Base URL
+
+```
+https://pzaas.online/webhook/242357
+```
+
+*(mesmo domínio compartilhado usado pelo Forno e pelo Orquestrador — os exemplos abaixo usam a URL completa)*
+
+> **Nota de status:** até a publicação final na instância compartilhada, o serviço foi validado em ambiente local (`http://localhost:5678/webhook/242357/...`) com testes reais contra o Forno e o Orquestrador de produção. A URL acima entra em operação assim que o workflow for ativado na instância compartilhada da turma.
+
 ## Endpoints
 
-### `GET /webhook/242357/health`
+### `GET https://pzaas.online/webhook/242357/health`
 
 Healthcheck público, sem autenticação.
 
@@ -32,7 +42,7 @@ Healthcheck público, sem autenticação.
 
 ---
 
-### `POST /webhook/242357/v1/fila/entrada`
+### `POST https://pzaas.online/webhook/242357/v1/fila/entrada`
 
 Chamado pelo Orquestrador para inserir um pedido na fila de produção.
 
@@ -61,7 +71,7 @@ Chamado pelo Orquestrador para inserir um pedido na fila de produção.
 
 ---
 
-### `GET /webhook/242357/v1/fila/proxima-pronta` *(endpoint auxiliar de inspeção)*
+### `GET https://pzaas.online/webhook/242357/v1/fila/proxima-pronta` *(endpoint auxiliar de inspeção)*
 
 Não faz parte do fluxo automático — usado apenas para depuração manual da fila de pizzas prontas.
 
