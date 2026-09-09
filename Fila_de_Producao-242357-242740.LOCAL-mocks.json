@@ -1,0 +1,1536 @@
+{
+  "name": "Fila_de_Producao-242357-242740",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "242357/health",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-health",
+      "name": "Webhook Health",
+      "webhookId": "wh-health"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"UP\", \"service\": \"fila-producao-242357\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        300,
+        0
+      ],
+      "id": "rw-health",
+      "name": "Respond Health"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "242357/v1/fila/entrada",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        400
+      ],
+      "id": "wh-entrada",
+      "name": "Webhook Entrada",
+      "webhookId": "wh-entrada"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-key-entrada-cond",
+              "leftValue": "={{ $json.headers['x-api-key'] }}",
+              "rightValue": "turma2026",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        300,
+        400
+      ],
+      "id": "if-key-entrada",
+      "name": "If API Key - Entrada"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"x-api-key ausente ou invalida\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        600,
+        560
+      ],
+      "id": "rw-entrada-401",
+      "name": "Respond 401 - Entrada"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-pedido-id-entrada-cond",
+              "leftValue": "={{ !!($json.headers['x-pedido-id']) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true,
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        600,
+        300
+      ],
+      "id": "if-pedido-id-entrada",
+      "name": "If x-pedido-id Presente"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"header x-pedido-id obrigatorio\" }",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        900,
+        420
+      ],
+      "id": "rw-entrada-400",
+      "name": "Respond 400 - Entrada"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=fila-242357:pedido:{{ $json.headers['x-pedido-id'] }}",
+        "propertyName": "statusAtual",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ],
+      "id": "redis-get-dedup-entrada",
+      "name": "Redis Get - Dedup Entrada",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-dedup-entrada-cond",
+              "leftValue": "={{ !!($json.statusAtual) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true,
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        200
+      ],
+      "id": "if-dedup-entrada",
+      "name": "If Pedido Ja Existe"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"pedido ja enfileirado\", \"pedidoId\": \"{{ $('Webhook Entrada').item.json.headers['x-pedido-id'] }}\" }",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1500,
+        120
+      ],
+      "id": "rw-entrada-409",
+      "name": "Respond 409 - Entrada"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst headers = $('Webhook Entrada').item.json.headers;\nconst body = $('Webhook Entrada').item.json.body || {};\nconst pedidoId = headers['x-pedido-id'];\nconst saborPizza = body.SaborPizza || body.saborPizza || null;\nreturn [{ json: { pedidoId, saborPizza, queueItem: JSON.stringify({ pedidoId, saborPizza }) } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        280
+      ],
+      "id": "code-build-item-entrada",
+      "name": "Montar Item da Fila"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=fila-242357:pedido:{{ $json.pedidoId }}",
+        "value": "AGUARDANDO",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        280
+      ],
+      "id": "redis-set-status-aguardando",
+      "name": "Redis Set - Status Aguardando",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:aguardando_forno",
+        "messageData": "={{ $json.queueItem }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        280
+      ],
+      "id": "redis-push-aguardando-forno",
+      "name": "Redis Push - Aguardando Forno",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4003/v1/logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { eventId: $now.toMillis() + '-' + Math.random().toString(36).slice(2), service: 'fila-producao', action: 'PEDIDO_ENFILEIRADO', status: 'SUCCESS', level: 'INFO', message: 'Pedido enfileirado para producao', orderId: $('Montar Item da Fila').item.json.pedidoId, metadata: { saborPizza: $('Montar Item da Fila').item.json.saborPizza } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        280
+      ],
+      "id": "log-entrada",
+      "name": "Log - Pedido Enfileirado",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"queued\": true, \"pedidoId\": \"{{ $('Montar Item da Fila').item.json.pedidoId }}\" }",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2700,
+        280
+      ],
+      "id": "rw-entrada-201",
+      "name": "Respond 201 - Entrada"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        900
+      ],
+      "id": "cron-processa-fila",
+      "name": "A Cada 3 Segundos"
+    },
+    {
+      "parameters": {
+        "operation": "pop",
+        "list": "fila-242357:slots-livres",
+        "propertyName": "slot",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        900
+      ],
+      "id": "redis-pop-slot",
+      "name": "Redis Pop - Slot Livre",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-slot-obtido-cond",
+              "leftValue": "={{ !!($json.slot) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true,
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        600,
+        900
+      ],
+      "id": "if-slot-obtido",
+      "name": "If Slot Obtido"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        1000
+      ],
+      "id": "noop-sem-slot",
+      "name": "Sem Slot Disponivel"
+    },
+    {
+      "parameters": {
+        "operation": "pop",
+        "list": "fila-242357:aguardando_forno",
+        "propertyName": "queueItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        820
+      ],
+      "id": "redis-pop-pedido",
+      "name": "Redis Pop - Pedido Da Fila",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-pedido-obtido-cond",
+              "leftValue": "={{ !!($json.queueItem) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true,
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        820
+      ],
+      "id": "if-pedido-obtido",
+      "name": "If Pedido Obtido"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:slots-livres",
+        "messageData": "={{ $('Redis Pop - Slot Livre').item.json.slot }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        940
+      ],
+      "id": "redis-devolve-slot-vazio",
+      "name": "Redis Push - Devolve Slot (Fila Vazia)",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst raw = $json.queueItem;\nconst item = typeof raw === 'string' ? JSON.parse(raw) : raw;\nreturn [{ json: { pedidoId: item.pedidoId, saborPizza: item.saborPizza, slot: $('Redis Pop - Slot Livre').item.json.slot } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        740
+      ],
+      "id": "code-parse-pedido",
+      "name": "Parse Pedido"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4003/v1/logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { eventId: $now.toMillis() + '-' + Math.random().toString(36).slice(2), service: 'fila-producao', action: 'ENVIADO_AO_FORNO', status: 'PROCESSING', level: 'INFO', message: 'Pedido enviado ao forno', orderId: $('Parse Pedido').item.json.pedidoId, metadata: { saborPizza: $('Parse Pedido').item.json.saborPizza } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        740
+      ],
+      "id": "log-enviado-forno",
+      "name": "Log - Enviado Ao Forno",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4001/213804/v1/forno",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            },
+            {
+              "name": "x-pedido-id",
+              "value": "={{ $('Parse Pedido').item.json.pedidoId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { pizzaName: $('Parse Pedido').item.json.saborPizza } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        740
+      ],
+      "id": "http-forno",
+      "name": "Chamar Forno",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-forno-200-cond",
+              "leftValue": "={{ ($json.statusCode) || 0 }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2400,
+        740
+      ],
+      "id": "if-forno-200",
+      "name": "If Forno Respondeu 200"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-forno-503-cond",
+              "leftValue": "={{ ($json.statusCode) || 0 }}",
+              "rightValue": 503,
+              "operator": {
+                "type": "number",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2700,
+        900
+      ],
+      "id": "if-forno-503",
+      "name": "If Forno Lotado Ou Down (503)"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=fila-242357:pedido:{{ $('Parse Pedido').item.json.pedidoId }}",
+        "value": "PRONTO",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        600
+      ],
+      "id": "redis-set-status-pronto",
+      "name": "Redis Set - Status Pronto",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:prontas",
+        "messageData": "={{ $('Parse Pedido').item.json.pedidoId }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        600
+      ],
+      "id": "redis-push-prontas",
+      "name": "Redis Push - Prontas",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:slots-livres",
+        "messageData": "={{ $('Parse Pedido').item.json.slot }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        600
+      ],
+      "id": "redis-devolve-slot-sucesso",
+      "name": "Redis Push - Devolve Slot (Sucesso)",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4002/v1/pedido-pronto",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            },
+            {
+              "name": "x-pedido-id",
+              "value": "={{ $('Parse Pedido').item.json.pedidoId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: 'Pronto' } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        600
+      ],
+      "id": "http-orquestrador-pronto",
+      "name": "Notificar Orquestrador - Pronto",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4003/v1/logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { eventId: $now.toMillis() + '-' + Math.random().toString(36).slice(2), service: 'fila-producao', action: 'PEDIDO_PRONTO_NOTIFICADO', status: 'SUCCESS', level: 'INFO', message: 'Pedido pronto e orquestrador notificado', orderId: $('Parse Pedido').item.json.pedidoId, metadata: { saborPizza: $('Parse Pedido').item.json.saborPizza } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3900,
+        600
+      ],
+      "id": "log-pronto-notificado",
+      "name": "Log - Pedido Pronto Notificado",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:aguardando_forno",
+        "messageData": "={{ $('Parse Pedido').item.json.pedidoId ? JSON.stringify({ pedidoId: $('Parse Pedido').item.json.pedidoId, saborPizza: $('Parse Pedido').item.json.saborPizza }) : '' }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        900
+      ],
+      "id": "redis-devolve-pedido-503",
+      "name": "Redis Push - Devolve Pedido (503)",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:slots-livres",
+        "messageData": "={{ $('Parse Pedido').item.json.slot }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        900
+      ],
+      "id": "redis-devolve-slot-503",
+      "name": "Redis Push - Devolve Slot (503)",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4003/v1/logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { eventId: $now.toMillis() + '-' + Math.random().toString(36).slice(2), service: 'fila-producao', action: 'FORNO_INDISPONIVEL', status: 'FAILED', level: 'WARN', message: 'Forno lotado ou indisponivel, pedido devolvido a fila', orderId: $('Parse Pedido').item.json.pedidoId, metadata: { httpStatus: $json.statusCode } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        900
+      ],
+      "id": "log-forno-indisponivel",
+      "name": "Log - Forno Indisponivel",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=fila-242357:pedido:{{ $('Parse Pedido').item.json.pedidoId }}",
+        "value": "ERRO",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        1100
+      ],
+      "id": "redis-set-status-erro",
+      "name": "Redis Set - Status Erro",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "fila-242357:slots-livres",
+        "messageData": "={{ $('Parse Pedido').item.json.slot }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        1100
+      ],
+      "id": "redis-devolve-slot-erro",
+      "name": "Redis Push - Devolve Slot (Erro)",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:4003/v1/logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "turma2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { eventId: $now.toMillis() + '-' + Math.random().toString(36).slice(2), service: 'fila-producao', action: 'ERRO_FORNO', status: 'ERROR', level: 'ERROR', message: 'Erro inesperado ao chamar o forno', orderId: $('Parse Pedido').item.json.pedidoId, metadata: { httpStatus: $json.statusCode } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        1100
+      ],
+      "id": "log-erro-forno",
+      "name": "Log - Erro No Forno",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "242357/v1/fila/proxima-pronta",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1400
+      ],
+      "id": "wh-proxima",
+      "name": "Webhook Proxima Pronta",
+      "webhookId": "wh-proxima"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-key-proxima-cond",
+              "leftValue": "={{ $json.headers['x-api-key'] }}",
+              "rightValue": "turma2026",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        300,
+        1400
+      ],
+      "id": "if-key-proxima",
+      "name": "If API Key - Proxima"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"x-api-key ausente ou invalida\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        600,
+        1550
+      ],
+      "id": "rw-proxima-401",
+      "name": "Respond 401 - Proxima"
+    },
+    {
+      "parameters": {
+        "operation": "pop",
+        "list": "fila-242357:prontas",
+        "propertyName": "pedidoId",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1350
+      ],
+      "id": "redis-pop-proxima",
+      "name": "Redis Pop - Prontas",
+      "credentials": {
+        "redis": {
+          "id": "2bQnenMszpFAsFHY",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-proxima-vazia-cond",
+              "leftValue": "={{ !!($json.pedidoId) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true,
+                "name": "filter.operator.true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        900,
+        1350
+      ],
+      "id": "if-proxima-vazia",
+      "name": "If Proxima Vazia"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"pedidoId\": \"{{ $json.pedidoId }}\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        1300
+      ],
+      "id": "rw-proxima-200",
+      "name": "Respond 200 - Proxima"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"nenhum pedido pronto no momento\" }",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        1430
+      ],
+      "id": "rw-proxima-404",
+      "name": "Respond 404 - Proxima"
+    },
+    {
+      "parameters": {
+        "content": "## Fila de Producao — 242357 / 242740\n\n**Documentacao da API:** <cole aqui o link do Postman Publish Docs ou README do GitHub>\n\n**Redis (instancia compartilhada da turma):** host `redis`, porta `6379`, database `0` — configurar credencial pelo editor do n8n.\n\n**Chaves usadas por este fluxo:** `fila-242357:*`",
+        "height": 260,
+        "width": 460,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -320
+      ],
+      "id": "sticky-doc-link",
+      "name": "Documentacao"
+    }
+  ],
+  "connections": {
+    "Webhook Health": {
+      "main": [
+        [
+          {
+            "node": "Respond Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Entrada": {
+      "main": [
+        [
+          {
+            "node": "If API Key - Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If API Key - Entrada": {
+      "main": [
+        [
+          {
+            "node": "If x-pedido-id Presente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401 - Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If x-pedido-id Presente": {
+      "main": [
+        [
+          {
+            "node": "Redis Get - Dedup Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400 - Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Get - Dedup Entrada": {
+      "main": [
+        [
+          {
+            "node": "If Pedido Ja Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Pedido Ja Existe": {
+      "main": [
+        [
+          {
+            "node": "Respond 409 - Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Montar Item da Fila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Item da Fila": {
+      "main": [
+        [
+          {
+            "node": "Redis Set - Status Aguardando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Set - Status Aguardando": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Aguardando Forno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Aguardando Forno": {
+      "main": [
+        [
+          {
+            "node": "Log - Pedido Enfileirado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log - Pedido Enfileirado": {
+      "main": [
+        [
+          {
+            "node": "Respond 201 - Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A Cada 3 Segundos": {
+      "main": [
+        [
+          {
+            "node": "Redis Pop - Slot Livre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Pop - Slot Livre": {
+      "main": [
+        [
+          {
+            "node": "If Slot Obtido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Slot Obtido": {
+      "main": [
+        [
+          {
+            "node": "Redis Pop - Pedido Da Fila",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem Slot Disponivel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Pop - Pedido Da Fila": {
+      "main": [
+        [
+          {
+            "node": "If Pedido Obtido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Pedido Obtido": {
+      "main": [
+        [
+          {
+            "node": "Parse Pedido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Push - Devolve Slot (Fila Vazia)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Pedido": {
+      "main": [
+        [
+          {
+            "node": "Log - Enviado Ao Forno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log - Enviado Ao Forno": {
+      "main": [
+        [
+          {
+            "node": "Chamar Forno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar Forno": {
+      "main": [
+        [
+          {
+            "node": "If Forno Respondeu 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Forno Respondeu 200": {
+      "main": [
+        [
+          {
+            "node": "Redis Set - Status Pronto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Forno Lotado Ou Down (503)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Set - Status Pronto": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Prontas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Prontas": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Devolve Slot (Sucesso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Devolve Slot (Sucesso)": {
+      "main": [
+        [
+          {
+            "node": "Notificar Orquestrador - Pronto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar Orquestrador - Pronto": {
+      "main": [
+        [
+          {
+            "node": "Log - Pedido Pronto Notificado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Forno Lotado Ou Down (503)": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Devolve Pedido (503)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis Set - Status Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Devolve Pedido (503)": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Devolve Slot (503)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Devolve Slot (503)": {
+      "main": [
+        [
+          {
+            "node": "Log - Forno Indisponivel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Set - Status Erro": {
+      "main": [
+        [
+          {
+            "node": "Redis Push - Devolve Slot (Erro)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Push - Devolve Slot (Erro)": {
+      "main": [
+        [
+          {
+            "node": "Log - Erro No Forno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Proxima Pronta": {
+      "main": [
+        [
+          {
+            "node": "If API Key - Proxima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If API Key - Proxima": {
+      "main": [
+        [
+          {
+            "node": "Redis Pop - Prontas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401 - Proxima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Pop - Prontas": {
+      "main": [
+        [
+          {
+            "node": "If Proxima Vazia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Proxima Vazia": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 - Proxima",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 404 - Proxima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

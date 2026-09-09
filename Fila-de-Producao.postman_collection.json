@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "Fila de Producao - 242357 e 242740",
+    "description": "Testes da API da Fila de Producao (PZaaS). Ambiente local: rode iniciar.bat antes de usar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5678/webhook/242357" }
+  ],
+  "item": [
+    {
+      "name": "1 - Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "2 - Entrada - Pedido valido (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-api-key", "value": "turma2026" },
+          { "key": "x-pedido-id", "value": "PED-{{$timestamp}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PedidoID\": \"{{$timestamp}}\",\n  \"SaborPizza\": \"Calabresa\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/v1/fila/entrada", "host": ["{{base_url}}"], "path": ["v1", "fila", "entrada"] }
+      },
+      "response": []
+    },
+    {
+      "name": "3 - Entrada - Sem x-api-key (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-pedido-id", "value": "PED-{{$timestamp}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PedidoID\": \"{{$timestamp}}\",\n  \"SaborPizza\": \"Calabresa\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/v1/fila/entrada", "host": ["{{base_url}}"], "path": ["v1", "fila", "entrada"] }
+      }
+    },
+    {
+      "name": "4 - Entrada - Sem x-pedido-id (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-api-key", "value": "turma2026" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PedidoID\": \"1\",\n  \"SaborPizza\": \"Calabresa\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/v1/fila/entrada", "host": ["{{base_url}}"], "path": ["v1", "fila", "entrada"] }
+      }
+    },
+    {
+      "name": "5 - Entrada - Pedido duplicado (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-api-key", "value": "turma2026" },
+          { "key": "x-pedido-id", "value": "PED-FIXO-DEMO" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PedidoID\": \"FIXO-DEMO\",\n  \"SaborPizza\": \"Marguerita\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/v1/fila/entrada", "host": ["{{base_url}}"], "path": ["v1", "fila", "entrada"] }
+      },
+      "description": "Rode ESSA duas vezes seguidas: a primeira vai dar 201, a segunda vai dar 409 (pedido ja enfileirado)."
+    },
+    {
+      "name": "6 - Proxima Pronta (debug)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "turma2026" }
+        ],
+        "url": { "raw": "{{base_url}}/v1/fila/proxima-pronta", "host": ["{{base_url}}"], "path": ["v1", "fila", "proxima-pronta"] }
+      },
+      "description": "Espere uns 8-10s depois de mandar um pedido valido antes de chamar essa, pra dar tempo do forno processar."
+    }
+  ]
+}
